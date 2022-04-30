@@ -1,0 +1,4 @@
+/home/yanghl/cJson/build/CMakeFiles/rebuild_cache.dir
+/home/yanghl/cJson/build/CMakeFiles/edit_cache.dir
+/home/yanghl/cJson/build/CMakeFiles/cjson_test.dir
+/home/yanghl/cJson/build/CMakeFiles/cjson.dir

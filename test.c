@@ -28,20 +28,36 @@ static int test_pass = 0;
 static void test_parse_null() {
     lept_value v;
     v.type = LEPT_TRUE;
-    EXPECT_EQ_INT(LEPT_PARSE_OK, lept_parse(&v, "null"));
+    lept_context c;
+    c.json = "null";
+    EXPECT_EQ_INT(LEPT_PARSE_OK, lept_parse(&c, &v));
     EXPECT_EQ_INT(LEPT_NULL, lept_get_type(&v));
 }
 
-// parse_true的测试
+/* parse_true的测试 */
 static void test_parse_true() {
     lept_value v;
-    v.type = LEPT_TRUE;
-    EXPECT_EQ_INT(LEPT_PARSE_OK, lept_parse_true(&v, "true"));
+    v.type = LEPT_FALSE;
+    lept_context c;
+    c.json = "true";
+    EXPECT_EQ_INT(LEPT_PARSE_OK, lept_parse(&c, &v));
     EXPECT_EQ_INT(LEPT_TRUE, lept_get_type(&v));
+}
+
+/* parse_false的测试 */
+static void test_parse_false() {
+    lept_value v;
+    v.type = LEPT_TRUE;
+    lept_context c;
+    c.json = "false";
+    EXPECT_EQ_INT(LEPT_PARSE_OK, lept_parse(&c, &v));
+    EXPECT_EQ_INT(LEPT_FALSE, lept_get_type(&v));
 }
 
 static void test_parse() {
     test_parse_null();
+    test_parse_true();
+    test_parse_false();
 }
 
 int main() {
