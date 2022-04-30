@@ -32,6 +32,14 @@ static void test_parse_null() {
     EXPECT_EQ_INT(LEPT_NULL, lept_get_type(&v));
 }
 
+// parse_true的测试
+static void test_parse_true() {
+    lept_value v;
+    v.type = LEPT_TRUE;
+    EXPECT_EQ_INT(LEPT_PARSE_OK, lept_parse_true(&v, "true"));
+    EXPECT_EQ_INT(LEPT_TRUE, lept_get_type(&v));
+}
+
 static void test_parse() {
     test_parse_null();
 }
