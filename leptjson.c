@@ -81,10 +81,17 @@ static int lept_parse_value(lept_context* c, lept_value* v) {
     解析JSON文本
 */
 int lept_parse(lept_context* c, lept_value* v) {
+    int ret;
     assert(v != NULL);
     v->type = LEPT_NULL;
     lept_parse_whitespace(c);
-    return lept_parse_value(c, v);
+    if ((ret = lept_parse_value(c, v)) == LEPT_PARSE_OK) {
+        lept_parse_whitespace(c);
+        if (c->json[0] != '\0') {
+            return LEPT_PARSE_ROOT_NOT_SINGULAR;
+        }
+    }
+    return ret;
 }
 
 
@@ -92,6 +99,7 @@ int lept_parse(lept_context* c, lept_value* v) {
     返回value的类型
 */
 lept_type lept_get_type(const lept_value* v) {
+    assert(v != NULL);
     return v->type;
 }
 

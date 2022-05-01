@@ -1,6 +1,5 @@
 file(REMOVE_RECURSE
   "CMakeFiles/cjson.dir/leptjson.c.o"
-  "CMakeFiles/cjson.dir/leptjson.c.o.d"
   "libcjson.a"
   "libcjson.pdb"
 )

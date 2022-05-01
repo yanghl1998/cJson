@@ -54,10 +54,49 @@ static void test_parse_false() {
     EXPECT_EQ_INT(LEPT_FALSE, lept_get_type(&v));
 }
 
+static void test_parse_expect_value() {
+    lept_value v;
+    v.type = LEPT_FALSE;
+
+    lept_context c;
+    c.json = "";
+    EXPECT_EQ_INT(LEPT_PARSE_EXPECT_VALUE, lept_parse( &c, &v));
+    EXPECT_EQ_INT(LEPT_NULL, lept_get_type(&v));
+
+    c.json = " ";
+    EXPECT_EQ_INT(LEPT_PARSE_EXPECT_VALUE, lept_parse( &c, &v));
+    EXPECT_EQ_INT(LEPT_NULL, lept_get_type(&v));
+}
+
+static void test_parse_invalid_value() {
+    lept_value v;
+    v.type = LEPT_FALSE;
+    lept_context c;
+    c.json = "nul";
+    EXPECT_EQ_INT(LEPT_PARSE_INVALID_VALUE, lept_parse(&c, &v));
+    EXPECT_EQ_INT(LEPT_NULL, lept_get_type(&v));
+
+    c.json = "?";
+    EXPECT_EQ_INT(LEPT_PARSE_INVALID_VALUE, lept_parse(&c, &v));
+    EXPECT_EQ_INT(LEPT_NULL, lept_get_type(&v));
+}
+
+static void test_parse_root_not_singular() {
+    lept_value v;
+    v.type = LEPT_FALSE;
+    lept_context c;
+    c.json = "null false";
+    EXPECT_EQ_INT(LEPT_PARSE_ROOT_NOT_SINGULAR, lept_parse(&c, &v));
+    EXPECT_EQ_INT(LEPT_NULL, lept_get_type(&v));
+}
+
 static void test_parse() {
     test_parse_null();
     test_parse_true();
     test_parse_false();
+    test_parse_expect_value();
+    test_parse_invalid_value();
+    test_parse_root_not_singular();
 }
 
 int main() {
