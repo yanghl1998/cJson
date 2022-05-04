@@ -1,1 +1,1 @@
-/usr/bin/cc    CMakeFiles/cjson_test.dir/test.c.o  -o cjson_test  libcjson.a 
+/usr/bin/cc CMakeFiles/cjson_test.dir/test.c.o -o cjson_test  libcjson.a 
