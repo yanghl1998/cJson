@@ -138,6 +138,63 @@ static int lept_parse_number(lept_context* c, lept_value* v) {
 }
 
 /*
+    解析4位十六进制数为码点
+*/
+static const char* lept_parse_hex4(const char* p, unsigned* u) {
+    // 这个函数读取四个16进制的数字
+    int i;
+    *u = 0;
+    for( i = 0; i < 4; i++) {
+        char ch = *p++;
+        *u << = 4;
+        // 这时候*u的低四位为0 使用或运算直接将ch复制到*u的低四位
+        if (ch >= '0' && ch <= '9') *u |= ch - '0';
+        else if (ch >= 'A' && ch <= 'F') *u |= ch - ('A' - 10);
+        else if (ch >= 'a' && ch <= 'f') *u |= ch - ('a' - 10);
+        else return NULL;
+    }
+    return p;
+}
+
+/*
+    将解析的码点编码成UTF-8 只有高代理项没有低代理项 或者低代理项不合理的均返回LEPT_PARSE_INVALID_UNICODE_SURROGATE错误
+    \u后面不是四位十六进制数字返回LEPT_PARSE_INVALID_UNICODE_HEX错误
+    根据UTF-8码表
+*/
+static void lept_encode_utf8(lept_context* c, unsigned* u) {
+    if (u <= 0x7f) {
+        // 码点范围是U+0000~U+007F
+        PUTC(c, u & 0xff);
+    }
+    else if (u <= 0x7ff) {
+        // 码点范围是U+0080~U+07FF 共11位
+        PUTC(c, 0xc0 | ((u>>6) & 0xff));// 取高5位
+        PUTC(c, 0x80 | (u      & 0x3f));// 取低6位
+    }
+    else if (u >= 0x800 && u <= 0xffff) {
+        // 码点范围是U+0800~U+FFFF 共16位
+        PUTC(c, 0xe0 | ((u >> 12) & 0xff));// 取高4位
+        PUTC(c, 0x80 | ((u >> 6)  & 0x3f));// 取中6位
+        PUTC(c, 0x80 | (u         & 0x3f));// 取后6位
+    }
+    else if (u >= 0x10000 && u <= 0x10ffff) {
+        // 码点范围是U+10000~U+10FFFF 共21位
+        PUTC(c, 0xf0 | ((u >> 18) & 0xff));// 取高三位
+        PUTC(c, 0x80 | ((u >> 12) & 0x3f));// 取随后6位
+        PUTC(c, 0x80 | ((u >> 6)  & 0x3f));// 取随后6位
+        PUTC(c, 0x80 | (u         & 0x3f));// 取最后6位
+    }
+}
+
+/*
+    这个宏用来统一下一个函数中关于字符串的返回
+*/
+#define STRING_ERROR(ret) do { c->top = head; return ret; } while(0)
+
+
+
+
+/*
     解析字符串
 */
 static int lept_parse_string(lept_context* c, lept_value* v) {
@@ -163,9 +220,9 @@ static int lept_parse_string(lept_context* c, lept_value* v) {
                     case 'n': PUTC(c, '\n'); break;
                     case 'r': PUTC(c, '\r'); break;
                     case 't': PUTC(c, '\t'); break;
+                    case 'u': // TODO
                     default:
-                        c->top = head;
-                        return LEPT_PARSE_INVALID_STRING_ESCAPE;
+                        STRING_ERROR(LEPT_PARSE_INVALID_STRING_ESCAPE);
                 }
                 break;
             case '\0':
@@ -173,8 +230,7 @@ static int lept_parse_string(lept_context* c, lept_value* v) {
                 return LEPT_PARSE_MISS_QUOTATION_MARK;
             default:
                 if ((unsigned char)ch < 0x20) {
-                    c->top = head;
-                    return LEPT_PARSE_INVALID_STRING_CHAR;
+                    STRING_ERROR(LEPT_PARSE_INVALID_STRING_CHAR);
                 }
                 PUTC(c, ch);
         }
