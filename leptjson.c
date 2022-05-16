@@ -199,6 +199,8 @@ static void lept_encode_utf8(lept_context* c, unsigned* u) {
 */
 static int lept_parse_string(lept_context* c, lept_value* v) {
     size_t head = c->top, len;
+    // u, u2是存储解析的unicode码
+    unsigned u, u2;
     const char* p;
     EXPECT(c, '\"');
     p = c->json;
@@ -220,7 +222,29 @@ static int lept_parse_string(lept_context* c, lept_value* v) {
                     case 'n': PUTC(c, '\n'); break;
                     case 'r': PUTC(c, '\r'); break;
                     case 't': PUTC(c, '\t'); break;
-                    case 'u': // TODO
+                    case 'u': 
+                        if (!lept_parse_hex4(p, &u)) {
+                            STRING_ERROR(LEPT_PARSE_INVALID_UNICODE_HEX);
+                        }
+                        // 第一个码点在0xd800~0xdbff之间表示高代理项
+                        // 说明后面会跟随一个0xdc00~0xdfff的低代理项
+                        if (u >= 0xd800 && u <= 0xdbff) {
+                            if (*p++ != '\\') {
+                                STRING_ERROR(LEPT_PARSE_INVALID_UNICODE_SURROGATE);
+                            }
+                            if (*p++ != 'u') {
+                                STRING_ERROR(LEPT_PARSE_INVALID_UNICODE_SURROGATE);
+                            }
+                            if (!(p = lept_parse_hex4(p, &u2))) {
+                                STRING_ERROR(LEPT_PARSE_INVALID_UNICODE_HEX);
+                            }
+                            if (u2 < 0xdd1e || u2 > 0xdfff) {
+                                STRING_ERROR(LEPT_PARSE_INVALID_UNICODE_SURROGATE);
+                            }
+                            u = 0x10000 + ((u - 0xd800) << 10 | (u2 - 0xdc00));
+                        }
+                        lept_encode_utf8(c, u);
+                        break;
                     default:
                         STRING_ERROR(LEPT_PARSE_INVALID_STRING_ESCAPE);
                 }
