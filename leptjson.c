@@ -141,17 +141,17 @@ static int lept_parse_number(lept_context* c, lept_value* v) {
 /*
     解析4位十六进制数为码点
 */
-static const char* lept_parse_hex4(const char* p, unsigned u) {
+static const char* lept_parse_hex4(const char* p, unsigned* u) {
     // 这个函数读取四个16进制的数字
     int i;
-    u = 0;
+    *u = 0;
     for( i = 0; i < 4; i++) {
         char ch = *p++;
-        u <<= 4;
+        *u <<= 4;
         // 这时候*u的低四位为0 使用或运算直接将ch复制到*u的低四位
-        if (ch >= '0' && ch <= '9') u |= ch - '0';
-        else if (ch >= 'A' && ch <= 'F') u |= ch - ('A' - 10);
-        else if (ch >= 'a' && ch <= 'f') u |= ch - ('a' - 10);
+        if (ch >= '0' && ch <= '9') *u |= ch - '0';
+        else if (ch >= 'A' && ch <= 'F') *u |= ch - ('A' - 10);
+        else if (ch >= 'a' && ch <= 'f') *u |= ch - ('a' - 10);
         else return NULL;
     }
     return p;
@@ -249,7 +249,7 @@ static int lept_parse_string(lept_context* c, lept_value* v) {
                 }
                 break;
             case '\0':
-                return LEPT_PARSE_MISS_QUOTATION_MARK;
+                STRING_ERROR(LEPT_PARSE_MISS_QUOTATION_MARK);
             default:
                 if ((unsigned char)ch < 0x20) {
                     STRING_ERROR(LEPT_PARSE_INVALID_STRING_CHAR);
@@ -322,33 +322,32 @@ static int lept_parse_array(lept_context* c, lept_value* v) {
     写入解析出来的根值
 */
 static int lept_parse_value(lept_context* c, lept_value* v) {
-    switch (c->json[0]) {
-        case 'n': return lept_parse_literal(c, v, "null", LEPT_NULL);
-        case 't': return lept_parse_literal(c, v, "true", LEPT_TRUE);
-        case 'f': return lept_parse_literal(c, v, "false", LEPT_FALSE);
-        case '"': return lept_parse_string(c, v);
-        case '[': return lept_parse_array(c, v);
-        /* \0 是字符串结束符 */
+    switch (*c->json) {
+        case 't':  return lept_parse_literal(c, v, "true", LEPT_TRUE);
+        case 'f':  return lept_parse_literal(c, v, "false", LEPT_FALSE);
+        case 'n':  return lept_parse_literal(c, v, "null", LEPT_NULL);
+        default:   return lept_parse_number(c, v);
+        case '"':  return lept_parse_string(c, v);
+        case '[':  return lept_parse_array(c, v);
         case '\0': return LEPT_PARSE_EXPECT_VALUE;
-        default: return lept_parse_number(c, v);
     }
 }
 
 /*
     解析JSON文本
 */
-int lept_parse(lept_value* v, const char* json_str) {
+int lept_parse(lept_value* v, const char* json) {
+    lept_context c;
     int ret;
     assert(v != NULL);
-    lept_context c;
-    c.json = json_str;
+    c.json = json;
     c.stack = NULL;
-    c.top = c.size = 0;
+    c.size = c.top = 0;
     lept_init(v);
     lept_parse_whitespace(&c);
     if ((ret = lept_parse_value(&c, v)) == LEPT_PARSE_OK) {
         lept_parse_whitespace(&c);
-        if (c.json[0] != '\0') {
+        if (*c.json != '\0') {
             v->type = LEPT_NULL;
             ret = LEPT_PARSE_ROOT_NOT_SINGULAR;
         }
