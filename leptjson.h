@@ -17,15 +17,25 @@ typedef enum {
 /* 声明数据结构 使用结构体 */
 typedef struct lept_value lept_value;
 
+typedef struct lept_member lept_member;
+
 struct lept_value {
     /* 当且仅当解析对象是数字的时候，成员n用于存储解析出的数字*/
     /* 现在增加了字符串对象 因为不可能同时为数字和字符串 使用union节省内存*/
     union {
+        struct { lept_member* m; size_t size; }o; /* object*/
         struct { lept_value* e; size_t size; }a; /* array */
         struct { char* s; size_t len; }s; /* string */
         double n; /* number */
     }u;
     lept_type type;
+};
+
+/* member结构体是一个JSON键值对*/
+struct lept_member {
+    char* key; /* key 一个字符串*/
+    size_t klen; /* key字符串的长度*/
+    lept_value val; /* val */
 };
 
 /* 声明解析返回值枚举*/
@@ -74,5 +84,10 @@ void lept_set_string(lept_value* v, const char* s, size_t len);
 
 size_t lept_get_array_size(const lept_value* v);
 lept_value* lept_get_array_element(const lept_value* v, size_t index);
+
+size_t lept_get_object_size(const lept_value* v);
+const char* lept_get_object_key(const lept_value* v, size_t index);
+size_t lept_get_object_key_length(const lept_value* v, size_t index);
+lept_value* lept_get_object_value(const lept_value* v, size_t index);
 
 #endif /* LEPTJSON_H__ */
